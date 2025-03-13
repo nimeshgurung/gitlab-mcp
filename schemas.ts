@@ -388,6 +388,12 @@ export const GetMergeRequestDiffsSchema = GetMergeRequestSchema.extend({
   view: z.enum(["inline", "parallel"]).optional().describe("Diff view type"),
 });
 
+export const GetIssueSchema = ProjectParamsSchema.extend({
+  issue_iid: z
+    .number()
+    .describe("The internal ID of the issue"),
+});
+
 export const CreateNoteSchema = z.object({
   project_id: z.string().describe("Project ID or namespace/project_path"),
   noteable_type: z
@@ -428,3 +434,4 @@ export type GitLabMergeRequestDiff = z.infer<
   typeof GitLabMergeRequestDiffSchema
 >;
 export type CreateNoteOptions = z.infer<typeof CreateNoteSchema>;
+export type GetIssueOptions = z.infer<typeof GetIssueSchema>;

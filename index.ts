@@ -39,6 +39,7 @@ import {
   GetMergeRequestSchema,
   GetMergeRequestDiffsSchema,
   UpdateMergeRequestSchema,
+  GetIssueSchema,
   type GitLabFork,
   type GitLabReference,
   type GitLabRepository,
@@ -574,6 +575,25 @@ async function updateMergeRequest(
   return GitLabMergeRequestSchema.parse(await response.json());
 }
 
+// Issue 조회 함수
+async function getIssue(
+  projectId: string,
+  issueIid: number
+): Promise<GitLabIssue> {
+  const url = new URL(
+    `${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(
+      projectId
+    )}/issues/${issueIid}`
+  );
+
+  const response = await fetch(url.toString(), {
+    headers: DEFAULT_HEADERS,
+  });
+
+  await handleGitLabError(response);
+  return GitLabIssueSchema.parse(await response.json());
+}
+
 // 📦 새로운 함수: createNote - 이슈 또는 병합 요청에 노트(댓글)를 추가하는 함수
 async function createNote(
   projectId: string,
@@ -632,6 +652,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "create_issue",
         description: "Create a new issue in a GitLab project",
         inputSchema: zodToJsonSchema(CreateIssueSchema),
+      },
+      {
+        name: "get_issue",
+        description: "Get details of an issue in a GitLab project",
+        inputSchema: zodToJsonSchema(GetIssueSchema),
       },
       {
         name: "create_merge_request",
@@ -771,6 +796,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const args = CreateIssueSchema.parse(request.params.arguments);
         const { project_id, ...options } = args;
         const issue = await createIssue(project_id, options);
+        return {
+          content: [{ type: "text", text: JSON.stringify(issue, null, 2) }],
+        };
+      }
+
+      case "get_issue": {
+        const args = GetIssueSchema.parse(request.params.arguments);
+        const issue = await getIssue(args.project_id, args.issue_iid);
         return {
           content: [{ type: "text", text: JSON.stringify(issue, null, 2) }],
         };
